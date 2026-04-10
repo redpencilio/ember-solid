@@ -1,6 +1,5 @@
-import rdflib from 'rdflib';
+import { Fetcher, UpdateManager, namedNode, Statement, graph, parse, serialize } from 'rdflib';
 
-const { Fetcher, UpdateManager, namedNode, Statement } = rdflib;
 const BASE_GRAPH_STRING = "http://mu.semte.ch/libraries/rdf-store";
 
 /**
@@ -92,7 +91,7 @@ export default class ForkingStore {
   observers = null;
 
   constructor({ fetch }) {
-    this.graph = rdflib.graph();
+    this.graph = graph();
     this.fetcher = new Fetcher(this.graph, { fetch });
     this.updater = new UpdateManager(this.graph);
     this.observers = {};
@@ -128,12 +127,12 @@ export default class ForkingStore {
    */
   loadDataWithAddAndDelGraph(content, graph, additions, removals, format) {
     const graphValue = graph.termType == 'NamedNode' ? graph.value : graph;
-    rdflib.parse(content, this.graph, graphValue, format);
+    parse(content, this.graph, graphValue, format);
     if (additions) {
-      rdflib.parse(additions, this.graph, addGraphFor(graph).value, format);
+      parse(additions, this.graph, addGraphFor(graph).value, format);
     }
     if (removals) {
-      rdflib.parse(removals, this.graph, delGraphFor(graph).value, format);
+      parse(removals, this.graph, delGraphFor(graph).value, format);
     }
   }
 
@@ -147,9 +146,9 @@ export default class ForkingStore {
    */
   serializeDataWithAddAndDelGraph(graph, format = 'text/turtle') {
     return {
-      graph: rdflib.serialize(graph, this.graph, format),
-      additions: rdflib.serialize(addGraphFor(graph), this.graph, format),
-      removals: rdflib.serialize(delGraphFor(graph), this.graph, format)
+      graph: serialize(graph, this.graph, format),
+      additions: serialize(addGraphFor(graph), this.graph, format),
+      removals: serialize(delGraphFor(graph), this.graph, format)
     };
   }
 
@@ -162,7 +161,7 @@ export default class ForkingStore {
    * @returns {String} serialized content of the given graph
    */
   serializeDataMergedGraph(graph, format = 'text/turtle') {
-    return rdflib.serialize(this.mergedGraph(graph), this.graph, format);
+    return serialize(this.mergedGraph(graph), this.graph, format);
   }
 
   /**
@@ -174,7 +173,7 @@ export default class ForkingStore {
    */
   parse(content, graph, format) {
     const graphValue = graph.termType == 'NamedNode' ? graph.value : graph;
-    rdflib.parse(content, this.graph, graphValue, format);
+    parse(content, this.graph, graphValue, format);
   }
 
   /**

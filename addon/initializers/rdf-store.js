@@ -1,11 +1,11 @@
 import Service from '@ember/service';
-import rdflib from 'rdflib';
+import { namedNode } from 'rdflib';
+
 import { getOwner, setOwner } from '@ember/application';
 import { RDF, SOLID } from '../utils/namespaces';
 import env from 'ember-get-config';
 import ForkableStore from '../utils/forking-store';
 
-const { namedNode } = rdflib;
 
 /**
  *

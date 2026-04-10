@@ -1,24 +1,24 @@
-import rdflib from 'rdflib';
+import { Namespace, NamedNode } from 'rdflib';
 
 const ns = {
-  rdf: rdflib.Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-  form: rdflib.Namespace("http://lblod.data.gift/vocabularies/forms/"),
-  shacl: rdflib.Namespace("http://www.w3.org/ns/shacl#"),
-  skos: rdflib.Namespace("http://www.w3.org/2004/02/skos/core#"),
-  xsd: rdflib.Namespace("http://www.w3.org/2001/XMLSchema#"),
-  vcard: rdflib.Namespace("http://www.w3.org/2006/vcard/ns#"),
-  foaf: rdflib.Namespace("http://xmlns.com/foaf/0.1/"),
-  ldp: rdflib.Namespace("http://www.w3.org/ns/ldp#"),
-  sp: rdflib.Namespace("http://www.w3.org/ns/pim/space#"),
-  solid: rdflib.Namespace("http://www.w3.org/ns/solid/terms#"),
-  dct: rdflib.Namespace("http://purl.org/dc/terms/"),
-  tracker: rdflib.Namespace("http://mu.semte.ch/tracker/"),
-  schema: rdflib.Namespace("http://schema.org/"),
-  ext: rdflib.Namespace("http://mu.semte.ch/vocabularies/ext/") // use this as a dump for things you don't find
+  rdf: Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+  form: Namespace("http://lblod.data.gift/vocabularies/forms/"),
+  shacl: Namespace("http://www.w3.org/ns/shacl#"),
+  skos: Namespace("http://www.w3.org/2004/02/skos/core#"),
+  xsd: Namespace("http://www.w3.org/2001/XMLSchema#"),
+  vcard: Namespace("http://www.w3.org/2006/vcard/ns#"),
+  foaf: Namespace("http://xmlns.com/foaf/0.1/"),
+  ldp: Namespace("http://www.w3.org/ns/ldp#"),
+  sp: Namespace("http://www.w3.org/ns/pim/space#"),
+  solid: Namespace("http://www.w3.org/ns/solid/terms#"),
+  dct: Namespace("http://purl.org/dc/terms/"),
+  tracker: Namespace("http://mu.semte.ch/tracker/"),
+  schema: Namespace("http://schema.org/"),
+  ext: Namespace("http://mu.semte.ch/vocabularies/ext/") // use this as a dump for things you don't find
 };
 
 function setNamespace(label, value) {
-  ns[label] = rdflib.Namespace(value);
+  ns[label] = Namespace(value);
   return ns[label];
 }
 
@@ -48,7 +48,7 @@ function toNamespace(thing) {
   else if (typeof thing === "string" && thing.indexOf(":") === -1)
     return ns[thing];
   else if (typeof thing === "string")
-    return rdflib.Namespace(thing);
+    return Namespace(thing);
   else
     return undefined;
 }
@@ -59,14 +59,14 @@ function toNamespace(thing) {
  * Understands namespaces, strings, and NamedNode instances.
  */
 function toNamedNode(thing) {
-  if (thing instanceof rdflib.NamedNode) {
+  if (thing instanceof NamedNode) {
     return thing;
   } else if (typeof thing === "string" && thing.indexOf(":") !== -1) {
     const ns = toNamespace(thing.slice(0, thing.indexOf(":")));
     if (ns)
       return ns(thing.slice(thing.indexOf(":") + 1));
     else
-      return new rdflib.NamedNode(thing); // maybe a mailto: or ipfs: or http:
+      return new NamedNode(thing); // maybe a mailto: or ipfs: or http:
   } else {
     return undefined; // nothing sensible to do, URIs have a :
   }

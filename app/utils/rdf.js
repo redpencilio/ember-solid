@@ -1,1 +1,1 @@
-export { rdf, Namespace } from 'ember-solid/utils/rdf';
+export { sym, Namespace } from 'ember-solid/utils/rdf';

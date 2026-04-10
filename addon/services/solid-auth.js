@@ -1,12 +1,12 @@
 import { inject as service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import Service from '@ember/service';
+import { sym } from 'rdflib';
 import { getDefaultSession } from '@inrupt/solid-client-authn-browser';
-import rdflib from 'rdflib';
+
 import { LDP, RDF, SOLID, SP } from '../utils/namespaces';
 import env from 'ember-get-config';
 
-const { sym } = rdflib;
 
 /**
  *

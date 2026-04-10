@@ -1,11 +1,10 @@
 import { tracked } from '@glimmer/tracking';
 import { get, set } from '@ember/object';
 import { XSD, RDF } from '../utils/namespaces';
-import rdflib, { namedNode } from 'rdflib';
+import { Literal, NamedNode, Statement, namedNode } from 'rdflib';
 import { toNamespace, toNamedNode } from '../utils/namespaces';
 import { v4 as uuid } from 'uuid';
 
-const { Statement } = rdflib;
 
 function sendAlert(message) {
   console.error(...arguments); // TODO: these happen too much, fix in ForkingStore
@@ -262,7 +261,7 @@ function property(options = {}) {
         // null.
         switch (options.type) {
           case "string":
-            setRelationObject(new rdflib.Literal(value));
+            setRelationObject(new Literal(value));
             break;
           case "stringSet":
             const setDifference = (left,right) => new Set([...left].filter( (l) => !right.has(l) ));
@@ -275,27 +274,27 @@ function property(options = {}) {
 
             changeGraphTriples(
               this,
-              [...stringsToRemove].map( (str) => new rdflib.Statement(this.uri, predicate, new rdflib.Literal(str), graph)),
-              [...stringsToAdd].map( (str) => new rdflib.Statement(this.uri, predicate, new rdflib.Literal(str), graph)));
+              [...stringsToRemove].map( (str) => new Statement(this.uri, predicate, new Literal(str), graph)),
+              [...stringsToAdd].map( (str) => new Statement(this.uri, predicate, new Literal(str), graph)));
 
             break;
           case "decimal":
-            setRelationObject(new rdflib.Literal(value, null, XSD("decimal")));
+            setRelationObject(new Literal(value, null, XSD("decimal")));
             break;
           case "integer":
-            setRelationObject(new rdflib.Literal(value, null, XSD("integer")));
+            setRelationObject(new Literal(value, null, XSD("integer")));
             break;
           case "float":
-            setRelationObject(new rdflib.Literal(value, null, XSD("float")));
+            setRelationObject(new Literal(value, null, XSD("float")));
             break;
           case "boolean":
-            setRelationObject(new rdflib.Literal(value ? "true" : "false", null, XSD("boolean")));
+            setRelationObject(new Literal(value ? "true" : "false", null, XSD("boolean")));
             break;
           case "dateTime":
-            setRelationObject(new rdflib.Literal(value.toUTCString(), null, XSD("dateTime")));
+            setRelationObject(new Literal(value.toUTCString(), null, XSD("dateTime")));
             break;
           case "uri":
-            setRelationObject(value ? new rdflib.NamedNode(value) : undefined);
+            setRelationObject(value ? new NamedNode(value) : undefined);
             break;
           case "belongsTo":
             const oldValue = this[propertyName];
@@ -329,10 +328,10 @@ function property(options = {}) {
             newObjects.forEach((o) => objectsToRemove.delete(o));
 
             objectsToRemove.forEach((obj) => {
-              statementsToRemove.push(new rdflib.Statement(this.uri, predicate, obj.uri, graph));
+              statementsToRemove.push(new Statement(this.uri, predicate, obj.uri, graph));
             });
             objectsToAdd.forEach((obj) => {
-              statementsToAdd.push(new rdflib.Statement(this.uri, predicate, obj.uri, graph));
+              statementsToAdd.push(new Statement(this.uri, predicate, obj.uri, graph));
             });
 
             changeGraphTriples(this, statementsToRemove, statementsToAdd)
@@ -512,7 +511,7 @@ class SemanticModel {
 
     changeGraphTriples(
       this,
-      [new rdflib.Statement(this.uri, RDF("type"), this.rdfType, graphForInstance(this))],
+      [new Statement(this.uri, RDF("type"), this.rdfType, graphForInstance(this))],
       [])
       .then((uri, message, response) => console.log(`Success deleting: ${message}`))
       .catch((message, uri, response) => sendAlert(message, { uri, message, response }));
@@ -668,7 +667,7 @@ function ensureResourceExists(entity, options) {
       changeGraphTriples(
         this,
         [],
-        [new rdflib.Statement(entity.uri, RDF("type"), rdfType, targetGraph)],
+        [new Statement(entity.uri, RDF("type"), rdfType, targetGraph)],
         options)
         .then((uri, message, response) => console.log(`Success updating: ${message}`))
         .catch((message, uri, response) => sendAlert(message, { uri, message, response }));
