@@ -1,12 +1,13 @@
-pipeline:
+steps:
+  install:
+    image: node:20-slim
+    commands:
+      - npm ci
   release:
     image: plugins/npm
     settings:
       token:
         from_secret: npm_access_token
-
-    # Pipeline level conditions aren't supported yet:
-    # https://github.com/woodpecker-ci/woodpecker/issues/283
-    when:
-      event: tag
-      tag: v*
+when:
+  - event: tag
+    ref: refs/tags/v*

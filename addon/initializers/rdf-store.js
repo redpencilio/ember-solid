@@ -2,9 +2,9 @@ import Service from '@ember/service';
 import { namedNode } from 'rdflib';
 
 import { getOwner, setOwner } from '@ember/application';
-import { RDF, SOLID } from '../utils/namespaces';
+import { RDF, SOLID } from 'ember-solid/utils/namespaces';
 import env from 'ember-get-config';
-import ForkableStore from '../utils/forking-store';
+import ForkableStore from 'ember-solid/utils/forking-store';
 
 
 /**

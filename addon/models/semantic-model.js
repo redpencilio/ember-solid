@@ -1,8 +1,8 @@
 import { tracked } from '@glimmer/tracking';
 import { get, set } from '@ember/object';
-import { XSD, RDF } from '../utils/namespaces';
+import { XSD, RDF } from 'ember-solid/utils/namespaces';
 import { Literal, NamedNode, Statement, namedNode } from 'rdflib';
-import { toNamespace, toNamedNode } from '../utils/namespaces';
+import { toNamespace, toNamedNode } from 'ember-solid/utils/namespaces';
 import { v4 as uuid } from 'uuid';
 
 

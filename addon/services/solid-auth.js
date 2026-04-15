@@ -1,10 +1,11 @@
 import { inject as service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import Service from '@ember/service';
+import { later } from '@ember/runloop';
 import { sym } from 'rdflib';
 import { getDefaultSession } from '@inrupt/solid-client-authn-browser';
 
-import { LDP, RDF, SOLID, SP } from '../utils/namespaces';
+import { LDP, RDF, SOLID, SP } from 'ember-solid/utils/namespaces';
 import env from 'ember-get-config';
 
 
@@ -20,6 +21,8 @@ import env from 'ember-get-config';
 export default class AuthService extends Service {
   @tracked
   session = null;
+
+  @tracked _writeCache = {};
 
   get isLoggedIn() {
     const session = this.session;
@@ -53,13 +56,20 @@ export default class AuthService extends Service {
         window.localStorage.removeItem(this.solidAuthRedirectPathKey);
         if( redirectPath ) {
           const url = new URL(redirectPath);
-          let recognized;
-          if( this.router.location.implementation == "hash" ) {
-            recognized = this.router.recognize( url.hash.slice(1) );
-          } else {
-            recognized = this.router.recognize( url.href.slice(url.origin.length) );
-          }
-          this.router.replaceWith( recognized.name, Object.assign( {}, recognized.params, { queryParams: recognized.queryParams }) );
+          // Use the raw URL path for in-app navigation rather than
+          // router.recognize() + router.replaceWith(name, params).
+          // Two reasons:
+          // 1. recognize() returns already-encoded params; passing them back to
+          //    replaceWith(name, params) double-encodes them (%2F → %252F),
+          //    breaking routes whose dynamic segments contain URL-encoded slashes.
+          // 2. In-app navigation (replaceWith) does NOT reload the page, so
+          //    ApplicationRoute.beforeModel() is not re-run. This prevents the
+          //    @inrupt/solid-client-authn-browser silentlyAuthenticate() cycle
+          //    from re-triggering on every navigation and causing a redirect loop.
+          const path = this.router.location.implementation === 'hash'
+            ? url.hash.slice(1)
+            : url.pathname + url.search + url.hash;
+          later(() => this.router.replaceWith(path), 0);
         }
       } catch (e) {
         console.error(`Failed to log in: ${e}`);
@@ -122,6 +132,77 @@ export default class AuthService extends Service {
       await session.logout();
     }
     window.localStorage.removeItem(this.solidLastIdentityProviderKey);
+    this._writeCache = {};
+  }
+
+  /**
+   * Check whether the current user has write access to a Solid resource
+   * by inspecting its WAC ACL document.
+   *
+   * Strategy:
+   * 1. HEAD the resource — if the response includes a Link: <…>; rel="acl"
+   *    header, fetch that ACL document.
+   * 2. Parse the Turtle for acl:Write associated with the current WebID.
+   * 3. Fallback: if HEAD succeeds but no ACL link header is present,
+   *    assume the user has write access (e.g. unprotected dev server).
+   *
+   * Results are cached per URL for the lifetime of the service instance.
+   *
+   * @param {string} resourceUrl
+   * @returns {Promise<boolean>}
+   */
+  async canWrite(resourceUrl) {
+    if (!this.isLoggedIn) return false;
+    if (this._writeCache[resourceUrl] !== undefined) {
+      return this._writeCache[resourceUrl];
+    }
+
+    try {
+      const authFetch = this.session?.fetch?.bind(this.session) || fetch;
+      const res = await authFetch(resourceUrl, { method: 'HEAD' });
+
+      if (!res.ok) {
+        this._writeCache[resourceUrl] = false;
+        return false;
+      }
+
+      const linkHeader = res.headers.get('Link') || '';
+      const aclMatch = linkHeader.match(/<([^>]+)>;\s*rel="acl"/);
+
+      if (!aclMatch) {
+        // No WAC ACL header — assume write if we can HEAD successfully
+        this._writeCache[resourceUrl] = true;
+        return true;
+      }
+
+      const aclUrl = aclMatch[1];
+      const aclRes = await authFetch(aclUrl, { headers: { Accept: 'text/turtle' } });
+
+      if (!aclRes.ok) {
+        this._writeCache[resourceUrl] = false;
+        return false;
+      }
+
+      const turtle = await aclRes.text();
+      const hasWrite = this._parseTurtleForWriteAccess(turtle, this.webId);
+      this._writeCache[resourceUrl] = hasWrite;
+      return hasWrite;
+    } catch {
+      this._writeCache[resourceUrl] = false;
+      return false;
+    }
+  }
+
+  /**
+   * Naive WAC Turtle check: look for acl:Write in the same block as the WebID.
+   * Covers the common single-owner case without a full WAC parser.
+   * @private
+   */
+  _parseTurtleForWriteAccess(turtle, webId) {
+    if (!webId) return false;
+    const hasWebId = turtle.includes(webId);
+    const hasWrite = /acl:Write|acl:mode\s+acl:Write/.test(turtle);
+    return hasWebId && hasWrite;
   }
 
   /**
