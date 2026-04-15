@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@glimmer/tracking": "^1.0.4",
-    "@inrupt/solid-client-authn-browser": "^1.12.2",
+    "@inrupt/solid-client-authn-browser": "^2.0.0",
     "ember-auto-import": "^2.4.0",
     "ember-cli-babel": "^7.26.11",
     "ember-cli-htmlbars": "^6.0.1",
