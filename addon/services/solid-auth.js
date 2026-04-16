@@ -54,9 +54,7 @@ export default class AuthService extends Service {
         // processes the code — passing restorePreviousSession:true there would
         // start a competing silent auth with no redirectUrl.
         const isCallback = new URL(window.location.href).searchParams.has('code');
-        const incomingRedirectResponse = await session.handleIncomingRedirect({ restorePreviousSession: !isCallback, url: window.location.href });
-        this.store.authSession = session;
-        this.store.podBase = await this.getPodBase(session.info.webId);
+        await session.handleIncomingRedirect({ restorePreviousSession: !isCallback, url: window.location.href });
 
         window.localStorage.removeItem(this.solidAuthRedirectPathKey);
         if( redirectPath ) {
@@ -79,6 +77,19 @@ export default class AuthService extends Service {
       } catch (e) {
         console.warn('[solid-auth] restoreSession catch:', e?.message ?? e);
         await session.logout();
+      }
+
+      // Always wire up the auth session so subsequent fetches are authenticated.
+      this.store.authSession = session;
+
+      // Load pod base separately — a failure here must not log the user out,
+      // since the OIDC session itself is fine.
+      if (session.info.isLoggedIn) {
+        try {
+          this.store.podBase = await this.getPodBase(session.info.webId);
+        } catch (e) {
+          console.warn('[solid-auth] getPodBase failed (session kept):', e?.message ?? e);
+        }
       }
 
       this.session = session;
