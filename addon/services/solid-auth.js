@@ -72,7 +72,11 @@ export default class AuthService extends Service {
           later(() => this.router.replaceWith(path), 0);
         }
       } catch (e) {
-        console.error(`Failed to log in: ${e}`);
+        // Silent re-authentication can fail when stored session data is stale or
+        // incomplete (e.g. missing redirectUrl after a partial login). Clear the
+        // bad state so the user can log in fresh rather than getting a hard error.
+        console.warn(`Session restore failed, clearing stale session data: ${e}`);
+        await session.logout();
       }
 
       this.session = session;
