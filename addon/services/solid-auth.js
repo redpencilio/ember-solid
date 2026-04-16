@@ -48,7 +48,13 @@ export default class AuthService extends Service {
         if( !redirectPath )
           window.localStorage.setItem(this.solidAuthRedirectPathKey, window.location.href);
 
-        const incomingRedirectResponse = await session.handleIncomingRedirect({ url: window.location.href });
+        // restorePreviousSession: true re-authenticates silently from stored
+        // localStorage tokens on normal page loads. Disabled on the OAuth
+        // callback (URL contains ?code=) because handleIncomingRedirect already
+        // processes the code — passing restorePreviousSession:true there would
+        // start a competing silent auth with no redirectUrl.
+        const isCallback = new URL(window.location.href).searchParams.has('code');
+        const incomingRedirectResponse = await session.handleIncomingRedirect({ restorePreviousSession: !isCallback, url: window.location.href });
         this.store.authSession = session;
         this.store.podBase = await this.getPodBase(session.info.webId);
 
