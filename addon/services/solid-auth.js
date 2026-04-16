@@ -48,15 +48,7 @@ export default class AuthService extends Service {
         if( !redirectPath )
           window.localStorage.setItem(this.solidAuthRedirectPathKey, window.location.href);
 
-        // Only attempt silent re-authentication on non-callback pages.
-        // On the callback page the URL already contains the OIDC code/state params;
-        // handleIncomingRedirect will handle those itself. Passing
-        // restorePreviousSession:true there can trigger a competing re-registration
-        // without a redirectUrl, causing CSS to reject with "redirect_uris must
-        // only contain strings" (JSON.stringify([undefined]) → [null]).
-        const isCallback = new URL(window.location.href).searchParams.has('code');
-        const incomingRedirectResponse = await session.handleIncomingRedirect({ restorePreviousSession: !isCallback, url: window.location.href });
-        console.log({incomingRedirectResponse});
+        const incomingRedirectResponse = await session.handleIncomingRedirect({ url: window.location.href });
         this.store.authSession = session;
         this.store.podBase = await this.getPodBase(session.info.webId);
 
@@ -79,10 +71,7 @@ export default class AuthService extends Service {
           later(() => this.router.replaceWith(path), 0);
         }
       } catch (e) {
-        // Silent re-authentication can fail when stored session data is stale or
-        // incomplete (e.g. missing redirectUrl after a partial login). Clear the
-        // bad state so the user can log in fresh rather than getting a hard error.
-        console.warn(`Session restore failed, clearing stale session data: ${e}`);
+        console.warn('[solid-auth] restoreSession catch:', e?.message ?? e);
         await session.logout();
       }
 
