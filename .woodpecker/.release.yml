@@ -2,7 +2,8 @@ steps:
   install:
     image: node:20-slim
     commands:
-      - npm ci
+      - npm install
+      # npm ci failed for some reason
   release:
     image: plugins/npm
     settings:
