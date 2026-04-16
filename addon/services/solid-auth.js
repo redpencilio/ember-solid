@@ -48,7 +48,14 @@ export default class AuthService extends Service {
         if( !redirectPath )
           window.localStorage.setItem(this.solidAuthRedirectPathKey, window.location.href);
 
-        const incomingRedirectResponse = await session.handleIncomingRedirect({ restorePreviousSession: true, url: window.location.href });
+        // Only attempt silent re-authentication on non-callback pages.
+        // On the callback page the URL already contains the OIDC code/state params;
+        // handleIncomingRedirect will handle those itself. Passing
+        // restorePreviousSession:true there can trigger a competing re-registration
+        // without a redirectUrl, causing CSS to reject with "redirect_uris must
+        // only contain strings" (JSON.stringify([undefined]) → [null]).
+        const isCallback = new URL(window.location.href).searchParams.has('code');
+        const incomingRedirectResponse = await session.handleIncomingRedirect({ restorePreviousSession: !isCallback, url: window.location.href });
         console.log({incomingRedirectResponse});
         this.store.authSession = session;
         this.store.podBase = await this.getPodBase(session.info.webId);
